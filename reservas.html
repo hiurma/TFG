@@ -139,7 +139,7 @@
     const wd = ["L","M","X","J","V","S","D"]; // lunes primero
 
     // Tu hoja (GViz JSON) como fuente primaria
-    const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS5vI-ouxKTDmqB27-a1QAP2p2uBMuA1IF-bZM1tNDOGIskAShbx13z8Toc9TIQGx2lvWHNHCpWHAeR/gviz/tq?gid=0&tqx=out:json";
+    const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS5vI-ouxKTDmqB27-a1QAP2p2uBMuA1IF-bZM1tNDOGIskAShbx13z8Toc9TIQGx2lvWHNHCpWHAeR/pubhtml?gid=0&single=true";
 
     async function fetchFromSheet(){
       const res = await fetch(SHEET_URL, {cache:'no-store'});
