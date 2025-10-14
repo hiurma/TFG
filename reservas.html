@@ -92,6 +92,7 @@
     <section class="availability" aria-label="Calendario de disponibilidad">
       <h2>Disponibilidad</h2>
       <p class="load-status" id="loadStatus">Cargando disponibilidad…</p>
+
       <div class="cal-wrap" id="cal" hidden>
         <div class="cal-head">
           <div class="cal-ctrls">
@@ -137,24 +138,19 @@
     const monthNames = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
     const wd = ["L","M","X","J","V","S","D"]; // lunes primero
 
-    // 👉 Pega AQUÍ la URL PUBLICADA de tu Google Sheet (GViz JSON):
-    // Cómo obtenerla: Archivo > Compartir > Publicar en la Web > Seleccionar hoja
-    // Copia el enlace que tiene este patrón:
-    // https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/gviz/tq?sheet=Hoja1&tqx=out:json
-    const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS5vI-ouxKTDmqB27-a1QAP2p2uBMuA1IF-bZM1tNDOGIskAShbx13z8Toc9TIQGx2lvWHNHCpWHAeR/pubhtml?gid=0&single=true";
+    // Tu hoja (GViz JSON) como fuente primaria
+    const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS5vI-ouxKTDmqB27-a1QAP2p2uBMuA1IF-bZM1tNDOGIskAShbx13z8Toc9TIQGx2lvWHNHCpWHAeR/gviz/tq?gid=0&tqx=out:json";
 
     async function fetchFromSheet(){
-      if(!SHEET_URL || SHEET_URL.startsWith("PASTE_")) throw new Error("Falta SHEET_URL");
       const res = await fetch(SHEET_URL, {cache:'no-store'});
       const text = await res.text();
-      // GViz retorna: google.visualization.Query.setResponse({...});
+      // GViz: google.visualization.Query.setResponse({...});
       const json = JSON.parse(text.replace(/^[^{]+/, '').replace(/;?\s*$/, ''));
       const rows = json.table.rows || [];
       const ranges = [];
       rows.forEach(r => {
         const a = r.c?.[0]?.v, b = r.c?.[1]?.v;
         if(!a || !b) return;
-        // a/b pueden venir como strings YYYY-MM-DD o como objetos fecha GViz
         const isoA = normalizeToISO(a);
         const isoB = normalizeToISO(b);
         if(isoA && isoB) ranges.push([isoA, isoB]);
@@ -162,12 +158,26 @@
       return ranges;
     }
 
+    // Normalizador robusto a ISO (YYYY-MM-DD)
     function normalizeToISO(v){
-      if(typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
-      // formato fecha GViz: { f: '1/2/2025', v: 'Date(2025,0,2)' } o similar
+      // Caso GViz Date(YYYY,MM,DD)
       if(typeof v === 'object' && v.v && /^Date\(/.test(v.v)){
         const m = v.v.match(/^Date\((\d+),(\d+),(\d+)/);
         if(m){ const y=+m[1], mo=+m[2], d=+m[3]; return toISO(new Date(y, mo, d)); }
+      }
+      if(typeof v !== 'string') return null;
+      const s = v.trim();
+      // YYYY-MM-DD o YYYY/MM/DD
+      let m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+      if(m){
+        const y=+m[1], mo=+m[2]-1, d=+m[3];
+        return toISO(new Date(y, mo, d));
+      }
+      // DD/MM/YYYY o DD-MM-YYYY o DD.MM.YYYY
+      m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+      if(m){
+        const d=+m[1], mo=+m[2]-1, y=+m[3];
+        return toISO(new Date(y, mo, d));
       }
       return null;
     }
@@ -176,7 +186,7 @@
       try{
         const fromSheet = await fetchFromSheet();
         if(fromSheet && fromSheet.length) return fromSheet;
-        throw new Error('Hoja vacía o sin datos');
+        throw new Error('La hoja no devolvió rangos válidos');
       }catch(e){
         console.warn('Fallo leyendo Google Sheet:', e.message, '→ usando disponibilidad.json si existe.');
         try{
@@ -187,7 +197,7 @@
       }
     }
 
-    // === Helpers calendario ===
+    // Helpers calendario
     function toISO(d){ return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
     function* daysBetween(from, to){ const d = new Date(from); while(d <= to){ yield new Date(d); d.setDate(d.getDate()+1); } }
     function buildSets(ranges){
@@ -287,7 +297,7 @@
       return false;
     }
 
-    // === Estado y navegación ===
+    // Estado y navegación
     let state = { offset: 0, total: TOTAL_MONTHS, sets: {busy:new Set(), start:new Set(), end:new Set()} };
     const statusEl = document.getElementById('loadStatus');
     const calWrap = document.getElementById('cal');
@@ -319,12 +329,14 @@
     (async()=>{
       try{
         const ranges = await fetchBooked();
+        const count = ranges.length;
         state.sets = buildSets(ranges);
         let startOffset = 0;
         for(let i=0;i<state.total;i++){
           if(monthHasAvailability(state.sets, i)){ startOffset = i; break; }
         }
-        statusEl.textContent = "Disponibilidad actualizada";
+        statusEl.textContent = count ? `Disponibilidad actualizada (${count} rangos)`
+                                     : "No se han encontrado rangos en la hoja (revisa el formato de fechas: A=Inicio, B=Fin)";
         calWrap.hidden = false;
         setOffset(startOffset);
       }catch(e){
@@ -334,6 +346,8 @@
         setOffset(0);
       }
     })();
+
+    async function fetchBooked(){ return await fetchFromSheet(); }
   })();
   </script>
 </body>
