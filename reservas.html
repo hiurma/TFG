@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reservas | La Casita de Es Pujols – Formentera</title>
+  <meta name="description" content="Reserva por WhatsApp o realiza el pago de la reserva por PayPal. Calendario de disponibilidad con datos desde Google Sheets.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .cards-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+    @media (max-width:900px){ .cards-2{grid-template-columns:1fr} }
+    /* === Calendario (carrusel de meses) === */
+    .availability{margin:24px 0}
+    .cal-wrap{border:1px solid #eee;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.06)}
+    .cal-head{display:flex;align-items:center;justify-content:space-between;background:var(--sand,#F2EDE6);padding:10px 12px}
+    .cal-title{font-weight:700;min-width:200px;text-align:center}
+    .cal-ctrls{display:flex;gap:8px;align-items:center}
+    .cal-btn{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:8px 12px;cursor:pointer}
+    .cal-btn:disabled{opacity:.5;cursor:not-allowed}
+    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid #f3f4f6}
+    .cal-grid .wd{font-size:12px;color:#6b7280;text-align:center;padding:8px;background:#fafafa}
+    .cal-grid .cell{position:relative;padding:10px;text-align:center;border:1px solid #f3f4f6;min-height:42px;font-size:14px}
+    .cell.muted{color:#c0c4cc;background:#fafafa}
+    .cell.past{color:#c0c4cc;background:#f5f5f5}
+    .cell.busy{background:#fee2e2;color:#991b1b}
+    .cell.start{background:#fddede;color:#991b1b;border-left:3px solid #991b1b}
+    .cell.end{background:#fddede;color:#991b1b;border-right:3px solid #991b1b}
+    .cell.today{outline:2px solid #2F6F82;outline-offset:-2px}
+    /* Tooltips */
+    .cell[data-tip]{cursor:help}
+    .cell .tip{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-6px);background:#111;color:#fff;padding:6px 8px;border-radius:8px;font-size:12px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s ease;z-index:10}
+    .cell .tip::after{content:"";position:absolute;left:50%;top:100%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#111}
+    .cell:hover .tip,.cell.show-tip .tip{opacity:1}
+    .dots{display:flex;gap:6px;justify-content:center;padding:10px}
+    .dots button{width:8px;height:8px;border-radius:50%;border:none;background:#d1d5db;cursor:pointer}
+    .dots button.active{background:#2F6F82}
+    .legend{display:flex;gap:14px;align-items:center;margin-top:10px;color:#555}
+    .legend .box{display:inline-block;width:14px;height:14px;border-radius:4px;border:1px solid #e5e7eb;margin-right:6px;vertical-align:middle}
+    .legend .free{background:#ffffff}
+    .legend .busy{background:#fee2e2}
+    .load-status{font-size:14px;color:#6b7280;margin-top:6px}
+    .load-status.error{color:#b91c1c}
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="logo">
+        <span class="logo-top">La Casita de Es Pujols</span>
+        <span class="logo-sub">Formentera</span>
+      </a>
+      <nav class="nav">
+        <a href="index.html">Inicio</a>
+        <a href="la-casita.html">La Casita</a>
+        <a href="galeria.html">Galería</a>
+        <a href="reservas.html" class="active">Reservas</a>
+        <a href="contacto.html">Contacto</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container content">
+    <h1>Reservas</h1>
+    <p>Elige el método que prefieras. Puedes escribirnos por WhatsApp o realizar el pago de reserva vía PayPal. Debajo verás el calendario con fechas ocupadas.</p>
+
+    <div class="cards-2">
+      <div class="card big">
+        <h2>WhatsApp</h2>
+        <p>Atención directa para confirmar disponibilidad y condiciones.</p>
+        <a class="btn whatsapp" target="_blank" rel="noopener" href="https://wa.me/34669106850?text=Hola%2C%20me%20interesa%20La%20Casita%20de%20Es%20Pujols%20(Formentera).%20%C2%BFFechas%20disponibles%3F">Abrir WhatsApp</a>
+      </div>
+      <div class="card big">
+        <h2>Pago de reserva (PayPal)</h2>
+        <p>Botón de pago seguro. <em>Reemplaza tu correo de PayPal y el importe.</em></p>
+        <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank">
+          <input type="hidden" name="cmd" value="_xclick">
+          <input type="hidden" name="business" value="your-paypal-email@example.com">
+          <input type="hidden" name="item_name" value="Reserva · La Casita de Es Pujols (Formentera)">
+          <input type="hidden" name="currency_code" value="EUR">
+          <label for="amount">Importe (€):</label>
+          <input type="number" id="amount" name="amount" min="50" step="10" value="100" required>
+          <button type="submit" class="btn primary">Pagar con PayPal</button>
+        </form>
+        <small>Consejo: Puedes cambiar el importe mínimo y texto del producto.</small>
+      </div>
+    </div>
+
+    <!-- === Calendario (debajo de WhatsApp y PayPal) === -->
+    <section class="availability" aria-label="Calendario de disponibilidad">
+      <h2>Disponibilidad</h2>
+      <p class="load-status" id="loadStatus">Cargando disponibilidad…</p>
+      <div class="cal-wrap" id="cal" hidden>
+        <div class="cal-head">
+          <div class="cal-ctrls">
+            <button class="cal-btn" id="toStart" title="Primer mes">⇤</button>
+            <button class="cal-btn" id="prev" aria-label="Mes anterior">‹</button>
+          </div>
+          <div class="cal-title" id="calTitle">–</div>
+          <div class="cal-ctrls">
+            <button class="cal-btn" id="next" aria-label="Mes siguiente">›</button>
+            <button class="cal-btn" id="toEnd" title="Último mes">⇥</button>
+          </div>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="dots" id="calDots"></div>
+      </div>
+
+      <p class="legend">
+        <span class="box free"></span> Disponible
+        <span class="box busy"></span> Ocupado
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <strong>La Casita de Es Pujols · Formentera</strong><br>
+        <span>La Isla Bonita</span><br>
+        <small>ETV-XXXX · A 200 m del mar · Es Pujols</small>
+      </div>
+      <div class="footer-links">
+        <a href="contacto.html">Contacto</a>
+        <a href="legal.html">Aviso legal</a>
+        <a href="legal.html#privacidad">Privacidad</a>
+        <a href="legal.html#cookies">Cookies</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+  (function(){
+    const TOTAL_MONTHS = 12;
+    const monthNames = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+    const wd = ["L","M","X","J","V","S","D"]; // lunes primero
+
+    // 👉 Pega AQUÍ la URL PUBLICADA de tu Google Sheet (GViz JSON):
+    // Cómo obtenerla: Archivo > Compartir > Publicar en la Web > Seleccionar hoja
+    // Copia el enlace que tiene este patrón:
+    // https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/gviz/tq?sheet=Hoja1&tqx=out:json
+    const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS5vI-ouxKTDmqB27-a1QAP2p2uBMuA1IF-bZM1tNDOGIskAShbx13z8Toc9TIQGx2lvWHNHCpWHAeR/gviz/tq?gid=0&tqx=out:json";
+
+    async function fetchFromSheet(){
+      if(!SHEET_URL || SHEET_URL.startsWith("PASTE_")) throw new Error("Falta SHEET_URL");
+      const res = await fetch(SHEET_URL, {cache:'no-store'});
+      const text = await res.text();
+      // GViz retorna: google.visualization.Query.setResponse({...});
+      const json = JSON.parse(text.replace(/^[^{]+/, '').replace(/;?\s*$/, ''));
+      const rows = json.table.rows || [];
+      const ranges = [];
+      rows.forEach(r => {
+        const a = r.c?.[0]?.v, b = r.c?.[1]?.v;
+        if(!a || !b) return;
+        // a/b pueden venir como strings YYYY-MM-DD o como objetos fecha GViz
+        const isoA = normalizeToISO(a);
+        const isoB = normalizeToISO(b);
+        if(isoA && isoB) ranges.push([isoA, isoB]);
+      });
+      return ranges;
+    }
+
+    function normalizeToISO(v){
+      if(typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+      // formato fecha GViz: { f: '1/2/2025', v: 'Date(2025,0,2)' } o similar
+      if(typeof v === 'object' && v.v && /^Date\(/.test(v.v)){
+        const m = v.v.match(/^Date\((\d+),(\d+),(\d+)/);
+        if(m){ const y=+m[1], mo=+m[2], d=+m[3]; return toISO(new Date(y, mo, d)); }
+      }
+      return null;
+    }
+
+    async function fetchBooked() {
+      try{
+        const fromSheet = await fetchFromSheet();
+        if(fromSheet && fromSheet.length) return fromSheet;
+        throw new Error('Hoja vacía o sin datos');
+      }catch(e){
+        console.warn('Fallo leyendo Google Sheet:', e.message, '→ usando disponibilidad.json si existe.');
+        try{
+          const r = await fetch('disponibilidad.json', {cache:'no-store'});
+          if(r.ok) return await r.json();
+        }catch(e2){ /* ignore */ }
+        return [];
+      }
+    }
+
+    // === Helpers calendario ===
+    function toISO(d){ return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
+    function* daysBetween(from, to){ const d = new Date(from); while(d <= to){ yield new Date(d); d.setDate(d.getDate()+1); } }
+    function buildSets(ranges){
+      const busy = new Set(), start = new Set(), end = new Set();
+      ranges.forEach(([a,b])=>{
+        const A = new Date(a+'T00:00:00'); const B = new Date(b+'T00:00:00');
+        start.add(toISO(A)); end.add(toISO(B));
+        for(const d of daysBetween(A,B)) busy.add(toISO(d));
+      });
+      return {busy, start, end};
+    }
+    function monthData(offset){
+      const base = new Date(); base.setDate(1); base.setMonth(base.getMonth()+offset);
+      const y = base.getFullYear(), m = base.getMonth();
+      const first = new Date(y, m, 1);
+      const last = new Date(y, m+1, 0);
+      const startIdx = (first.getDay()+6)%7; // lunes=0
+      return {y, m, first, last, startIdx};
+    }
+    function clearNode(el){ while(el.firstChild) el.removeChild(el.firstChild); }
+
+    function renderMonth(gridEl, titleEl, dotsEl, sets, offset, total){
+      const {busy, start, end} = sets;
+      const todayISO = toISO(new Date());
+      const {y, m, first, last, startIdx} = monthData(offset);
+      titleEl.textContent = monthNames[m] + " " + y;
+
+      clearNode(gridEl);
+      // header
+      wd.forEach(d => {
+        const el = document.createElement('div');
+        el.className = 'wd';
+        el.textContent = d;
+        gridEl.appendChild(el);
+      });
+
+      const rows = Math.ceil((startIdx + last.getDate())/7);
+      let day=1;
+      for(let r=0;r<rows;r++){
+        for(let c=0;c<7;c++){
+          if((r===0 && c<startIdx) || day>last.getDate()){
+            const cell = document.createElement('div');
+            cell.className = 'cell muted';
+            gridEl.appendChild(cell);
+          }else{
+            const iso = toISO(new Date(y, m, day));
+            let cls = 'cell';
+            let tip = '';
+            const isPast = iso < todayISO; // días pasados
+            if(isPast){ cls += ' past'; }
+            if(start.has(iso)){ cls += ' start'; tip = 'Check-in'; }
+            else if(end.has(iso)){ cls += ' end'; tip = 'Check-out'; }
+            else if(busy.has(iso)){ cls += ' busy'; tip = 'Ocupado'; }
+            if(iso===todayISO) cls += ' today';
+
+            const cell = document.createElement('div');
+            cell.className = cls;
+            cell.textContent = day;
+
+            if(tip){
+              cell.setAttribute('data-tip', tip);
+              const t = document.createElement('span');
+              t.className = 'tip';
+              t.textContent = tip;
+              cell.appendChild(t);
+              // móvil: tap para mostrar
+              cell.addEventListener('click', () => {
+                cell.classList.toggle('show-tip');
+                setTimeout(()=>cell.classList.remove('show-tip'), 1500);
+              });
+            }
+            gridEl.appendChild(cell);
+            day++;
+          }
+        }
+      }
+
+      // dots
+      clearNode(dotsEl);
+      for(let i=0;i<total;i++){
+        const b = document.createElement('button');
+        if(i===offset) b.className='active';
+        b.setAttribute('aria-label','Mes '+(i+1));
+        b.addEventListener('click', ()=> setOffset(i));
+        dotsEl.appendChild(b);
+      }
+    }
+
+    function monthHasAvailability(sets, offset){
+      const {busy} = sets;
+      const {y, m, first, last} = monthData(offset);
+      const todayISO = toISO(new Date());
+      for(let d=1; d<=last.getDate(); d++){
+        const iso = toISO(new Date(y, m, d));
+        if(iso >= todayISO && !busy.has(iso)) return true;
+      }
+      return false;
+    }
+
+    // === Estado y navegación ===
+    let state = { offset: 0, total: TOTAL_MONTHS, sets: {busy:new Set(), start:new Set(), end:new Set()} };
+    const statusEl = document.getElementById('loadStatus');
+    const calWrap = document.getElementById('cal');
+    const gridEl = document.getElementById("calGrid");
+    const titleEl = document.getElementById("calTitle");
+    const dotsEl = document.getElementById("calDots");
+    const prevBtn = document.getElementById("prev");
+    const nextBtn = document.getElementById("next");
+    const toStartBtn = document.getElementById("toStart");
+    const toEndBtn = document.getElementById("toEnd");
+
+    function setOffset(n){
+      state.offset = Math.max(0, Math.min(state.total-1, n));
+      renderMonth(gridEl, titleEl, dotsEl, state.sets, state.offset, state.total);
+      updateBtns();
+    }
+    function updateBtns(){
+      prevBtn.disabled = state.offset<=0;
+      toStartBtn.disabled = state.offset<=0;
+      nextBtn.disabled = state.offset>=state.total-1;
+      toEndBtn.disabled = state.offset>=state.total-1;
+    }
+
+    prevBtn.addEventListener('click', ()=> setOffset(state.offset-1));
+    nextBtn.addEventListener('click', ()=> setOffset(state.offset+1));
+    toStartBtn.addEventListener('click', ()=> setOffset(0));
+    toEndBtn.addEventListener('click', ()=> setOffset(state.total-1));
+
+    (async()=>{
+      try{
+        const ranges = await fetchBooked();
+        state.sets = buildSets(ranges);
+        let startOffset = 0;
+        for(let i=0;i<state.total;i++){
+          if(monthHasAvailability(state.sets, i)){ startOffset = i; break; }
+        }
+        statusEl.textContent = "Disponibilidad actualizada";
+        calWrap.hidden = false;
+        setOffset(startOffset);
+      }catch(e){
+        statusEl.textContent = "No se pudo cargar disponibilidad.";
+        statusEl.classList.add('error');
+        calWrap.hidden = false;
+        setOffset(0);
+      }
+    })();
+  })();
+  </script>
+</body>
+</html>
