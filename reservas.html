@@ -141,7 +141,7 @@
     // Cómo obtenerla: Archivo > Compartir > Publicar en la Web > Seleccionar hoja
     // Copia el enlace que tiene este patrón:
     // https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/gviz/tq?sheet=Hoja1&tqx=out:json
-    const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS5vI-ouxKTDmqB27-a1QAP2p2uBMuA1IF-bZM1tNDOGIskAShbx13z8Toc9TIQGx2lvWHNHCpWHAeR/gviz/tq?gid=0&tqx=out:json";
+    const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS5vI-ouxKTDmqB27-a1QAP2p2uBMuA1IF-bZM1tNDOGIskAShbx13z8Toc9TIQGx2lvWHNHCpWHAeR/pubhtml?gid=0&single=true";
 
     async function fetchFromSheet(){
       if(!SHEET_URL || SHEET_URL.startsWith("PASTE_")) throw new Error("Falta SHEET_URL");
