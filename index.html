@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>La Casita de Es Pujols – Alojamiento turístico en Formentera | La Isla Bonita</title>
+  <meta name="description" content="Pequeña casita mediterránea en Es Pujols, Formentera. A 2 minutos de la playa, ideal para 2 personas. Wi‑Fi, terraza y todo el confort.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+/* === Carousel === */
+.carousel{position:relative;overflow:hidden;border-radius:16px;background:#000}
+.carousel-track{display:flex;transition:transform .4s ease-in-out}
+.carousel-slide{min-width:100%;position:relative}
+.carousel-slide img{width:100%;height:60vh;object-fit:cover;display:block}
+.carousel-caption{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,transparent,rgba(0,0,0,.6));color:#fff;padding:14px 18px;font-weight:500}
+.carousel .ctrl{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.9);border:none;border-radius:12px;padding:10px 14px;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.carousel .prev{left:12px}
+.carousel .next{right:12px}
+.carousel-dots{display:flex;gap:6px;justify-content:center;margin-top:10px}
+.carousel-dots button{width:10px;height:10px;border-radius:50%;border:none;background:#d1d5db;cursor:pointer}
+.carousel-dots button.active{background:#2F6F82}
+@media (max-width:900px){
+  .carousel-slide img{height:48vh}
+}
+</style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="logo">
+        <span class="logo-top">La Casita de Es Pujols</span>
+        <span class="logo-sub">Formentera</span>
+      </a>
+      <nav class="nav">
+        <a href="index.html" class="active">Inicio</a>
+        <a href="la-casita.html">La Casita</a>
+        <a href="galeria.html">Galería</a>
+        <a href="reservas.html">Reservas</a>
+        <a href="contacto.html">Contacto</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero" style="--hero:url('assets/images/hero_playa.jpg');">
+    <div class="hero-overlay"></div>
+    <div class="hero-content container">
+      <h1>La Casita de Es Pujols <span>Formentera</span></h1>
+      <p class="slogan">La Isla Bonita</p>
+      <div class="cta-group">
+        <a class="btn primary" href="reservas.html">Reservar ahora</a>
+        <a class="btn outline" href="galeria.html">Ver galería</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="highlights container">
+    <div class="card">
+      <h3>Ubicación</h3>
+      <p>En Es Pujols, a 2–5 minutos a pie de la playa, restaurantes y tiendas.</p>
+    </div>
+    <div class="card">
+      <h3>Confort mediterráneo</h3>
+      <p>Pequeña casita/apartamento luminosa, equipada con A/C, Wi‑Fi y terraza.</p>
+    </div>
+    <div class="card">
+      <h3>Reservas flexibles</h3>
+      <p>Reserva directa, WhatsApp o enlace a Airbnb/AvaiBook. Pagos seguros.</p>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <strong>La Casita de Es Pujols · Formentera</strong><br>
+        <span>La Isla Bonita</span><br>
+        <small>ETV-XXXX · A 200 m del mar · Es Pujols</small>
+      </div>
+      <div class="footer-links">
+        <a href="contacto.html">Contacto</a>
+        <a href="legal.html">Aviso legal</a>
+        <a href="legal.html#privacidad">Privacidad</a>
+        <a href="legal.html#cookies">Cookies</a>
+      </div>
+    </div>
+  </footer>
+  <script src="script.js"></script>
+</body>
+</html>
