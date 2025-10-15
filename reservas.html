@@ -1,10 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Reservas | La Casita de Es Pujols – Formentera</title>
-  <meta name="description" content="Reserva por WhatsApp o realiza el pago de la reserva por PayPal. Calendario de disponibilidad con datos desde Google Sheets.">
+  <meta name="description" content="Reserva por WhatsApp o realiza el pago de la reserva por PayPal. Calendario de disponibilidad con datos desde Google Sheets (CSV).">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
@@ -12,7 +13,6 @@
   <style>
     .cards-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
     @media (max-width:900px){ .cards-2{grid-template-columns:1fr} }
-    /* === Calendario (carrusel de meses) === */
     .availability{margin:24px 0}
     .cal-wrap{border:1px solid #eee;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.06)}
     .cal-head{display:flex;align-items:center;justify-content:space-between;background:var(--sand,#F2EDE6);padding:10px 12px}
@@ -29,7 +29,6 @@
     .cell.start{background:#fddede;color:#991b1b;border-left:3px solid #991b1b}
     .cell.end{background:#fddede;color:#991b1b;border-right:3px solid #991b1b}
     .cell.today{outline:2px solid #2F6F82;outline-offset:-2px}
-    /* Tooltips */
     .cell[data-tip]{cursor:help}
     .cell .tip{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-6px);background:#111;color:#fff;padding:6px 8px;border-radius:8px;font-size:12px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s ease;z-index:10}
     .cell .tip::after{content:"";position:absolute;left:50%;top:100%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#111}
@@ -41,7 +40,7 @@
     .legend .box{display:inline-block;width:14px;height:14px;border-radius:4px;border:1px solid #e5e7eb;margin-right:6px;vertical-align:middle}
     .legend .free{background:#ffffff}
     .legend .busy{background:#fee2e2}
-    .load-status{font-size:14px;color:#6b7280;margin-top:6px}
+    .load-status{font-size:14px;color:#6b7280;margin:6px 0 12px}
     .load-status.error{color:#b91c1c}
   </style>
 </head>
@@ -63,8 +62,7 @@
   </header>
 
   <main class="container content">
-    <h1>Reservas</h1>
-    <p>Elige el método que prefieras. Puedes escribirnos por WhatsApp o realizar el pago de reserva vía PayPal. Debajo verás el calendario con fechas ocupadas.</p>
+    <h1>Disponibilidad</h1>
 
     <div class="cards-2">
       <div class="card big">
@@ -84,13 +82,10 @@
           <input type="number" id="amount" name="amount" min="50" step="10" value="100" required>
           <button type="submit" class="btn primary">Pagar con PayPal</button>
         </form>
-        <small>Consejo: Puedes cambiar el importe mínimo y texto del producto.</small>
       </div>
     </div>
 
-    <!-- === Calendario (debajo de WhatsApp y PayPal) === -->
-    <section class="availability" aria-label="Calendario de disponibilidad">
-      <h2>Disponibilidad</h2>
+    <section class="availability">
       <p class="load-status" id="loadStatus">Cargando disponibilidad…</p>
 
       <div class="cal-wrap" id="cal" hidden>
@@ -136,218 +131,66 @@
   (function(){
     const TOTAL_MONTHS = 12;
     const monthNames = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-    const wd = ["L","M","X","J","V","S","D"]; // lunes primero
+    const wd = ["L","M","X","J","V","S","D"];
 
-    // Tu hoja (GViz JSON) como fuente primaria
-    const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS5vI-ouxKTDmqB27-a1QAP2p2uBMuA1IF-bZM1tNDOGIskAShbx13z8Toc9TIQGx2lvWHNHCpWHAeR/pubhtml?gid=0&single=true";
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS5vI-ouxKTDmqB27-a1QAP2p2uBMuA1IF-bZM1tNDOGIskAShbx13z8Toc9TIQGx2lvWHNHCpWHAeR/pub?gid=0&single=true&output=csv&cachebust=" + Date.now();
 
-    async function fetchFromSheet(){
-      const res = await fetch(SHEET_URL, {cache:'no-store'});
+    async function fetchFromCSV(){
+      const res = await fetch(CSV_URL, {cache:'no-store'});
+      if(!res.ok) throw new Error('HTTP '+res.status+' al leer CSV');
       const text = await res.text();
-      // GViz: google.visualization.Query.setResponse({...});
-      const json = JSON.parse(text.replace(/^[^{]+/, '').replace(/;?\s*$/, ''));
-      const rows = json.table.rows || [];
+      const lines = text.trim().split(/\r?\n/);
+      const dataLines = (lines[0].toUpperCase().includes('INICIO') && lines[0].toUpperCase().includes('FIN')) ? lines.slice(1) : lines;
       const ranges = [];
-      rows.forEach(r => {
-        const a = r.c?.[0]?.v, b = r.c?.[1]?.v;
-        if(!a || !b) return;
-        const isoA = normalizeToISO(a);
-        const isoB = normalizeToISO(b);
-        if(isoA && isoB) ranges.push([isoA, isoB]);
-      });
+      for(const ln of dataLines){
+        const cols = ln.split(',').map(s=>s.trim().replace(/^"|"$/g,''));
+        if(cols.length<2) continue;
+        const a = toISOfromAny(cols[0]);
+        const b = toISOfromAny(cols[1]);
+        if(a && b) ranges.push([a,b]);
+      }
       return ranges;
     }
 
-    // Normalizador robusto a ISO (YYYY-MM-DD)
-    function normalizeToISO(v){
-      // Caso GViz Date(YYYY,MM,DD)
-      if(typeof v === 'object' && v.v && /^Date\(/.test(v.v)){
-        const m = v.v.match(/^Date\((\d+),(\d+),(\d+)/);
-        if(m){ const y=+m[1], mo=+m[2], d=+m[3]; return toISO(new Date(y, mo, d)); }
-      }
-      if(typeof v !== 'string') return null;
-      const s = v.trim();
-      // YYYY-MM-DD o YYYY/MM/DD
+    function toISOfromAny(s){
+      if(!s) return null;
       let m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
-      if(m){
-        const y=+m[1], mo=+m[2]-1, d=+m[3];
-        return toISO(new Date(y, mo, d));
-      }
-      // DD/MM/YYYY o DD-MM-YYYY o DD.MM.YYYY
+      if(m) return toISO(new Date(+m[1], +m[2]-1, +m[3]));
       m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
-      if(m){
-        const d=+m[1], mo=+m[2]-1, y=+m[3];
-        return toISO(new Date(y, mo, d));
-      }
+      if(m) return toISO(new Date(+m[3], +m[2]-1, +m[1]));
       return null;
     }
 
-    async function fetchBooked() {
-      try{
-        const fromSheet = await fetchFromSheet();
-        if(fromSheet && fromSheet.length) return fromSheet;
-        throw new Error('La hoja no devolvió rangos válidos');
-      }catch(e){
-        console.warn('Fallo leyendo Google Sheet:', e.message, '→ usando disponibilidad.json si existe.');
-        try{
-          const r = await fetch('disponibilidad.json', {cache:'no-store'});
-          if(r.ok) return await r.json();
-        }catch(e2){ /* ignore */ }
+    async function fetchBooked(){
+      try{ const r = await fetchFromCSV(); if(r && r.length) return r; throw new Error('CSV sin filas válidas'); }
+      catch(e){ 
+        console.error('Error leyendo CSV:', e);
+        try{ const r2 = await fetch('disponibilidad.json', {cache:'no-store'}); if(r2.ok) return await r2.json(); }catch(_){}
         return [];
       }
     }
 
-    // Helpers calendario
     function toISO(d){ return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
     function* daysBetween(from, to){ const d = new Date(from); while(d <= to){ yield new Date(d); d.setDate(d.getDate()+1); } }
-    function buildSets(ranges){
-      const busy = new Set(), start = new Set(), end = new Set();
-      ranges.forEach(([a,b])=>{
-        const A = new Date(a+'T00:00:00'); const B = new Date(b+'T00:00:00');
-        start.add(toISO(A)); end.add(toISO(B));
-        for(const d of daysBetween(A,B)) busy.add(toISO(d));
-      });
-      return {busy, start, end};
-    }
-    function monthData(offset){
-      const base = new Date(); base.setDate(1); base.setMonth(base.getMonth()+offset);
-      const y = base.getFullYear(), m = base.getMonth();
-      const first = new Date(y, m, 1);
-      const last = new Date(y, m+1, 0);
-      const startIdx = (first.getDay()+6)%7; // lunes=0
-      return {y, m, first, last, startIdx};
-    }
+    function buildSets(ranges){ const busy=new Set(), start=new Set(), end=new Set(); ranges.forEach(([a,b])=>{ const A=new Date(a+'T00:00:00'); const B=new Date(b+'T00:00:00'); start.add(toISO(A)); end.add(toISO(B)); for(const d of daysBetween(A,B)) busy.add(toISO(d)); }); return {busy,start,end}; }
+    function monthData(offset){ const base=new Date(); base.setDate(1); base.setMonth(base.getMonth()+offset); const y=base.getFullYear(), m=base.getMonth(); const first=new Date(y,m,1); const last=new Date(y,m+1,0); const startIdx=(first.getDay()+6)%7; return {y,m,first,last,startIdx}; }
     function clearNode(el){ while(el.firstChild) el.removeChild(el.firstChild); }
 
-    function renderMonth(gridEl, titleEl, dotsEl, sets, offset, total){
-      const {busy, start, end} = sets;
-      const todayISO = toISO(new Date());
-      const {y, m, first, last, startIdx} = monthData(offset);
-      titleEl.textContent = monthNames[m] + " " + y;
+    function renderMonth(gridEl,titleEl,dotsEl,sets,offset,total){ const {busy,start,end}=sets; const todayISO=toISO(new Date()); const {y,m,first,last,startIdx}=monthData(offset); titleEl.textContent=monthNames[m]+" "+y; clearNode(gridEl); const header=wd.map(d=>'<div class="wd">'+d+'</div>').join(''); gridEl.insertAdjacentHTML('beforeend', header); const rows=Math.ceil((startIdx+last.getDate())/7); let day=1; for(let r=0;r<rows;r++){ for(let c=0;c<7;c++){ if((r===0 && c<startIdx) || day>last.getDate()){ gridEl.insertAdjacentHTML('beforeend','<div class="cell muted"></div>'); } else { const iso=toISO(new Date(y,m,day)); let cls='cell'; let tip=''; const isPast = iso < todayISO; if(isPast) cls+=' past'; if(start.has(iso)){ cls+=' start'; tip='Check-in'; } else if(end.has(iso)){ cls+=' end'; tip='Check-out'; } else if(busy.has(iso)){ cls+=' busy'; tip='Ocupado'; } if(iso===todayISO) cls+=' today'; gridEl.insertAdjacentHTML('beforeend','<div class="'+cls+'"'+(tip?' data-tip="'+tip+'"':'')+'>'+day+(tip?'<span class="tip">'+tip+'</span>':'')+'</div>'); day++; } } } clearNode(dotsEl); for(let i=0;i<total;i++){ const b=document.createElement('button'); if(i===offset) b.className='active'; b.addEventListener('click',()=>setOffset(i)); dotsEl.appendChild(b); } }
+    function monthHasAvailability(sets,offset){ const {busy}=sets; const {y,m,last}=monthData(offset); const todayISO=toISO(new Date()); for(let d=1; d<=last.getDate(); d++){ const iso=toISO(new Date(y,m,d)); if(iso>=todayISO && !busy.has(iso)) return true; } return false; }
 
-      clearNode(gridEl);
-      // header
-      wd.forEach(d => {
-        const el = document.createElement('div');
-        el.className = 'wd';
-        el.textContent = d;
-        gridEl.appendChild(el);
-      });
+    let state={offset:0,total:TOTAL_MONTHS,sets:{busy:new Set(),start:new Set(),end:new Set()}};
+    const statusEl=document.getElementById('loadStatus'); const calWrap=document.getElementById('cal'); const gridEl=document.getElementById('calGrid'); const titleEl=document.getElementById('calTitle'); const dotsEl=document.getElementById('calDots'); const prevBtn=document.getElementById('prev'); const nextBtn=document.getElementById('next'); const toStartBtn=document.getElementById('toStart'); const toEndBtn=document.getElementById('toEnd');
+    function setOffset(n){ state.offset=Math.max(0,Math.min(state.total-1,n)); renderMonth(gridEl,titleEl,dotsEl,state.sets,state.offset,state.total); updateBtns(); }
+    function updateBtns(){ if(prevBtn) prevBtn.disabled=state.offset<=0; if(toStartBtn) toStartBtn.disabled=state.offset<=0; if(nextBtn) nextBtn.disabled=state.offset>=state.total-1; if(toEndBtn) toEndBtn.disabled=state.offset>=state.total-1; }
+    if(document.getElementById('prev')){ document.getElementById('prev').addEventListener('click',()=>setOffset(state.offset-1)); }
+    if(document.getElementById('next')){ document.getElementById('next').addEventListener('click',()=>setOffset(state.offset+1)); }
+    if(document.getElementById('toStart')){ document.getElementById('toStart').addEventListener('click',()=>setOffset(0)); }
+    if(document.getElementById('toEnd')){ document.getElementById('toEnd').addEventListener('click',()=>setOffset(state.total-1)); }
 
-      const rows = Math.ceil((startIdx + last.getDate())/7);
-      let day=1;
-      for(let r=0;r<rows;r++){
-        for(let c=0;c<7;c++){
-          if((r===0 && c<startIdx) || day>last.getDate()){
-            const cell = document.createElement('div');
-            cell.className = 'cell muted';
-            gridEl.appendChild(cell);
-          }else{
-            const iso = toISO(new Date(y, m, day));
-            let cls = 'cell';
-            let tip = '';
-            const isPast = iso < todayISO; // días pasados
-            if(isPast){ cls += ' past'; }
-            if(start.has(iso)){ cls += ' start'; tip = 'Check-in'; }
-            else if(end.has(iso)){ cls += ' end'; tip = 'Check-out'; }
-            else if(busy.has(iso)){ cls += ' busy'; tip = 'Ocupado'; }
-            if(iso===todayISO) cls += ' today';
+    (async()=>{ try{ const ranges=await fetchBooked(); const count=ranges.length; state.sets=buildSets(ranges); let startOffset=0; for(let i=0;i<state.total;i++){ if(monthHasAvailability(state.sets,i)){ startOffset=i; break; } } statusEl.textContent=count?("Disponibilidad actualizada ("+count+" rangos)"):"No se han encontrado rangos (A=Inicio, B=Fin)"; calWrap.hidden=false; setOffset(startOffset); }catch(e){ statusEl.textContent="No se pudo cargar disponibilidad."; statusEl.classList.add('error'); calWrap.hidden=false; setOffset(0); } })();
 
-            const cell = document.createElement('div');
-            cell.className = cls;
-            cell.textContent = day;
-
-            if(tip){
-              cell.setAttribute('data-tip', tip);
-              const t = document.createElement('span');
-              t.className = 'tip';
-              t.textContent = tip;
-              cell.appendChild(t);
-              // móvil: tap para mostrar
-              cell.addEventListener('click', () => {
-                cell.classList.toggle('show-tip');
-                setTimeout(()=>cell.classList.remove('show-tip'), 1500);
-              });
-            }
-            gridEl.appendChild(cell);
-            day++;
-          }
-        }
-      }
-
-      // dots
-      clearNode(dotsEl);
-      for(let i=0;i<total;i++){
-        const b = document.createElement('button');
-        if(i===offset) b.className='active';
-        b.setAttribute('aria-label','Mes '+(i+1));
-        b.addEventListener('click', ()=> setOffset(i));
-        dotsEl.appendChild(b);
-      }
-    }
-
-    function monthHasAvailability(sets, offset){
-      const {busy} = sets;
-      const {y, m, first, last} = monthData(offset);
-      const todayISO = toISO(new Date());
-      for(let d=1; d<=last.getDate(); d++){
-        const iso = toISO(new Date(y, m, d));
-        if(iso >= todayISO && !busy.has(iso)) return true;
-      }
-      return false;
-    }
-
-    // Estado y navegación
-    let state = { offset: 0, total: TOTAL_MONTHS, sets: {busy:new Set(), start:new Set(), end:new Set()} };
-    const statusEl = document.getElementById('loadStatus');
-    const calWrap = document.getElementById('cal');
-    const gridEl = document.getElementById("calGrid");
-    const titleEl = document.getElementById("calTitle");
-    const dotsEl = document.getElementById("calDots");
-    const prevBtn = document.getElementById("prev");
-    const nextBtn = document.getElementById("next");
-    const toStartBtn = document.getElementById("toStart");
-    const toEndBtn = document.getElementById("toEnd");
-
-    function setOffset(n){
-      state.offset = Math.max(0, Math.min(state.total-1, n));
-      renderMonth(gridEl, titleEl, dotsEl, state.sets, state.offset, state.total);
-      updateBtns();
-    }
-    function updateBtns(){
-      prevBtn.disabled = state.offset<=0;
-      toStartBtn.disabled = state.offset<=0;
-      nextBtn.disabled = state.offset>=state.total-1;
-      toEndBtn.disabled = state.offset>=state.total-1;
-    }
-
-    prevBtn.addEventListener('click', ()=> setOffset(state.offset-1));
-    nextBtn.addEventListener('click', ()=> setOffset(state.offset+1));
-    toStartBtn.addEventListener('click', ()=> setOffset(0));
-    toEndBtn.addEventListener('click', ()=> setOffset(state.total-1));
-
-    (async()=>{
-      try{
-        const ranges = await fetchBooked();
-        const count = ranges.length;
-        state.sets = buildSets(ranges);
-        let startOffset = 0;
-        for(let i=0;i<state.total;i++){
-          if(monthHasAvailability(state.sets, i)){ startOffset = i; break; }
-        }
-        statusEl.textContent = count ? `Disponibilidad actualizada (${count} rangos)`
-                                     : "No se han encontrado rangos en la hoja (revisa el formato de fechas: A=Inicio, B=Fin)";
-        calWrap.hidden = false;
-        setOffset(startOffset);
-      }catch(e){
-        statusEl.textContent = "No se pudo cargar disponibilidad.";
-        statusEl.classList.add('error');
-        calWrap.hidden = false;
-        setOffset(0);
-      }
-    })();
-
-    async function fetchBooked(){ return await fetchFromSheet(); }
+    async function fetchBooked(){ return await fetchFromCSV(); }
   })();
   </script>
 </body>
