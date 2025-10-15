@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Galería | La Casita de Es Pujols – Formentera</title>
+  <meta name="description" content="Galería fotográfica: terraza con vistas al mar, comedor luminoso, dormitorio mediterráneo, cocina equipada y playa de Es Pujols.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+/* === Carousel === */
+.carousel{position:relative;overflow:hidden;border-radius:16px;background:#000}
+.carousel-track{display:flex;transition:transform .4s ease-in-out}
+.carousel-slide{min-width:100%;position:relative}
+.carousel-slide img{width:100%;height:60vh;object-fit:cover;display:block}
+.carousel-caption{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,transparent,rgba(0,0,0,.6));color:#fff;padding:14px 18px;font-weight:500}
+.carousel .ctrl{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.9);border:none;border-radius:12px;padding:10px 14px;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.carousel .prev{left:12px}
+.carousel .next{right:12px}
+.carousel-dots{display:flex;gap:6px;justify-content:center;margin-top:10px}
+.carousel-dots button{width:10px;height:10px;border-radius:50%;border:none;background:#d1d5db;cursor:pointer}
+.carousel-dots button.active{background:#2F6F82}
+@media (max-width:900px){
+  .carousel-slide img{height:48vh}
+}
+</style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="logo">
+        <span class="logo-top">La Casita de Es Pujols</span>
+        <span class="logo-sub">Formentera</span>
+      </a>
+      <nav class="nav">
+        <a href="index.html">Inicio</a>
+        <a href="la-casita.html">La Casita</a>
+        <a href="galeria.html" class="active">Galería</a>
+        <a href="reservas.html">Reservas</a>
+        <a href="contacto.html">Contacto</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container content">
+    <h1>Galería</h1>
+
+    <div id="galeria-carrusel" class="carousel">
+      <div class="carousel-track">
+        <div class="carousel-slide">
+          <img src="assets/images/gal_terraza.jpg" alt="Terraza con vistas al mar">
+          <div class="carousel-caption">Terraza con vistas al mar</div>
+        </div>
+        <div class="carousel-slide">
+          <img src="assets/images/gal_comedor.jpg" alt="Comedor luminoso">
+          <div class="carousel-caption">Comedor luminoso</div>
+        </div>
+        <div class="carousel-slide">
+          <img src="assets/images/gal_dormitorio.jpg" alt="Dormitorio mediterráneo">
+          <div class="carousel-caption">Dormitorio mediterráneo</div>
+        </div>
+        <div class="carousel-slide">
+          <img src="assets/images/gal_cocina.jpg" alt="Cocina equipada">
+          <div class="carousel-caption">Cocina equipada</div>
+        </div>
+        <div class="carousel-slide">
+          <img src="assets/images/hero_playa.jpg" alt="Playa de Es Pujols – Formentera">
+          <div class="carousel-caption">Playa de Es Pujols – Formentera</div>
+        </div>
+      </div>
+      <button class="ctrl prev" aria-label="Anterior">‹</button>
+      <button class="ctrl next" aria-label="Siguiente">›</button>
+    </div>
+    <div class="carousel-dots">
+      <button aria-label="Ir a 1" class="active"></button>
+      <button aria-label="Ir a 2"></button>
+      <button aria-label="Ir a 3"></button>
+      <button aria-label="Ir a 4"></button>
+      <button aria-label="Ir a 5"></button>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <strong>La Casita de Es Pujols · Formentera</strong><br>
+        <span>La Isla Bonita</span><br>
+        <small>ETV-XXXX · A 200 m del mar · Es Pujols</small>
+      </div>
+      <div class="footer-links">
+        <a href="contacto.html">Contacto</a>
+        <a href="legal.html">Aviso legal</a>
+        <a href="legal.html#privacidad">Privacidad</a>
+        <a href="legal.html#cookies">Cookies</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script>
+function initCarousel(id){
+  const root = document.getElementById(id);
+  if(!root) return;
+  const track = root.querySelector('.carousel-track');
+  const slides = [...root.querySelectorAll('.carousel-slide')];
+  const btnPrev = root.querySelector('.prev');
+  const btnNext = root.querySelector('.next');
+  const dots = root.querySelectorAll('.carousel-dots button');
+  let i = 0;
+  function update(){
+    track.style.transform = `translateX(-${i*100}%)`;
+    dots.forEach((d,idx)=>d.classList.toggle('active', idx===i));
+  }
+  btnPrev.addEventListener('click', ()=>{ i = (i-1+slides.length)%slides.length; update(); });
+  btnNext.addEventListener('click', ()=>{ i = (i+1)%slides.length; update(); });
+  dots.forEach((d,idx)=> d.addEventListener('click', ()=>{ i=idx; update(); }));
+  let startX=null;
+  track.addEventListener('touchstart', e=>{ startX = e.touches[0].clientX; });
+  track.addEventListener('touchend', e=>{
+    if(startX===null) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    if(Math.abs(dx)>40){ i = (dx<0)? (i+1)%slides.length : (i-1+slides.length)%slides.length; update(); }
+    startX=null;
+  });
+  update();
+}
+document.addEventListener('DOMContentLoaded', ()=>{
+  initCarousel('galeria-carrusel');
+});
+</script>
+</body>
+</html>
